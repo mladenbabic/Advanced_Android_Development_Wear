@@ -50,7 +50,4 @@
         android:defaultValue="@string/pref_enable_notifications_default" />
 
 
-
-
-
 </PreferenceScreen>
