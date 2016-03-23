@@ -21,10 +21,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -32,9 +34,14 @@ import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.SurfaceHolder;
+import android.view.WindowInsets;
 
+import com.example.mladen.wear.util.BitmapUtil;
+import com.example.mladen.wear.util.ColorPreset;
 import com.example.mladen.wear.util.DigitalWatchFaceUtil;
+import com.example.mladen.wear.util.PreferencesUtil;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.DataApi;
@@ -70,6 +77,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
     private static final int MSG_UPDATE_TIME = 0;
     private static final String TAG = "SunshineWatchFace";
     private static final int DEFAULT_BG_COLOR = Color.parseColor("#FFFFFF");
+    private static final int DEFAULT_TEXT_COLOR = Color.parseColor("#000000");
 
     @Override
     public Engine onCreateEngine() {
@@ -96,7 +104,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         }
     }
 
-    private class Engine extends CanvasWatchFaceService.Engine implements   DataApi.DataListener,
+    private class Engine extends CanvasWatchFaceService.Engine implements DataApi.DataListener,
             GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
 
@@ -104,9 +112,32 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         boolean mRegisteredTimeZoneReceiver = false;
         Paint mBackgroundPaint;
         Paint mHandPaint;
+        Paint mTouchTapPaint;
+        Paint mAmbientPeekCardBorderPaint;
+        Paint mSecondPaint;
+        Rect mCardBounds = new Rect();
+        Bitmap mWeatherIconBitmap;
         boolean mAmbient;
         Time mTime;
+        private boolean showTouchCircle;
+        int mTapCount;
+        private float touchX;
+        private float touchY;
+        private int mWidth = 400;
+        private int mHeight = 400;
+        private float mScale;
+        private int mCenterX;
+        private int mCenterY;
+        private boolean mIsRound;
+        private int mChinSize;
+        boolean mLowBitAmbient;
 
+        Typeface typeface = Typeface.createFromAsset(getAssets(), "fonts/Digital.ttf");
+        Typeface typeface2 = Typeface.createFromAsset(getAssets(), "fonts/Digital2.ttf");
+
+        SparseArray<Bitmap> weatherIcons = new SparseArray();
+        SparseArray<Bitmap> handsImages = new SparseArray();
+        SparseArray<ColorPreset> colorPresets = new SparseArray();
 
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
@@ -116,20 +147,22 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             }
         };
 
-        int mTapCount;
-
-        /**
-         * Whether the display supports fewer bits for each color in ambient mode. When true, we
-         * disable anti-aliasing in ambient mode.
-         */
-        boolean mLowBitAmbient;
-
 
         GoogleApiClient mGoogleApiClient = new GoogleApiClient.Builder(SunshineWatchFace.this)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .addApi(Wearable.API)
                 .build();
+
+        Resources resources = SunshineWatchFace.this.getResources();
+
+        @Override
+        public void onApplyWindowInsets(WindowInsets insets) {
+            super.onApplyWindowInsets(insets);
+            mIsRound = insets.isRound();
+            mChinSize = insets.getSystemWindowInsetBottom();
+        }
+
 
         @Override
         public void onCreate(SurfaceHolder holder) {
@@ -154,12 +187,62 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             mHandPaint.setStrokeCap(Paint.Cap.ROUND);
 
             mTime = new Time();
+
+            initColorPresets();
+
+        }
+
+
+        @Override
+        public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+            super.onSurfaceChanged(holder, format, width, height);
+
+            initImages();
+
+
+            mWidth = width;
+            mHeight = height;
+
+            mCenterX = mWidth / 2;
+            mCenterY = mHeight / 2;
+
+            mScale = ((float) mWidth) / handsImages.get(0).getWidth();
+
+            BitmapUtil.scaleBitmaps(handsImages, mScale);
+            BitmapUtil.scaleBitmaps(weatherIcons, mScale);
+
+        }
+
+        private void initImages() {
+
+//            Bitmap[] weatherIconBitmaps = BitmapUtil.loadBitmaps(R.array.weatherIconIds, resources);
+//            for (int i = 0; i < weatherIconBitmaps.length; i++) {
+//                weatherIcons.put(i, weatherIconBitmaps[i]);
+//            }
+//
+//            Bitmap[] handsBitmaps = BitmapUtil.loadBitmaps(R.array.weatherIconIds, resources);
+//            for (int i = 0; i < handsBitmaps.length; i++) {
+//                handsImages.put(i, handsBitmaps[i]);
+//            }
+
+        }
+
+        private void initColorPresets() {
+            colorPresets.put(0, new ColorPreset(Color.parseColor("#000000"), Color.parseColor("#FFFFFF")));
+            colorPresets.put(1, new ColorPreset(Color.parseColor("#4DD2FF"), Color.parseColor("#000000")));
+            colorPresets.put(2, new ColorPreset(Color.parseColor("#ACBA96"), Color.parseColor("#111111")));
+            colorPresets.put(3, new ColorPreset(Color.parseColor("#99F2DB"), Color.parseColor("#000000")));
+            colorPresets.put(4, new ColorPreset(Color.parseColor("#DB8180"), Color.parseColor("#111111")));
         }
 
         @Override
         public void onDestroy() {
             mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
             super.onDestroy();
+
+            BitmapUtil.recycleBitmaps(weatherIcons);
+            BitmapUtil.recycleBitmaps(handsImages);
+
         }
 
         @Override
@@ -182,9 +265,9 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 if (mLowBitAmbient) {
                     mHandPaint.setAntiAlias(!inAmbientMode);
                 }
+                setColors();
                 invalidate();
             }
-
             // Whether the timer should be running depends on whether we're visible (as well as
             // whether we're in ambient mode), so we may need to start or stop the timer.
             updateTimer();
@@ -196,7 +279,8 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
          */
         @Override
         public void onTapCommand(int tapType, int x, int y, long eventTime) {
-            Resources resources = SunshineWatchFace.this.getResources();
+
+            hideTapHighlight();
             switch (tapType) {
                 case TAP_TYPE_TOUCH:
                     // The user has started touching the screen.
@@ -206,9 +290,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                     break;
                 case TAP_TYPE_TAP:
                     // The user has completed the tap gesture.
-                    mTapCount++;
-                    mBackgroundPaint.setColor(resources.getColor(mTapCount % 2 == 0 ?
-                            R.color.background : R.color.background2));
+                    startTapHighlight(x, y);
                     break;
             }
             invalidate();
@@ -218,25 +300,52 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         public void onDraw(Canvas canvas, Rect bounds) {
             mTime.setToNow();
 
-            // Draw the background.
-            drawAnalogClock(canvas, mTime, bounds);
-            drawDigitalClock(canvas, mTime, bounds);
-        }
-
-        private void drawDigitalClock(Canvas canvas, Time mTime, Rect bounds) {
-
-
-
-        }
-
-
-
-        private void drawAnalogClock(Canvas canvas, Time mTime, Rect bounds) {
             if (isInAmbientMode()) {
                 canvas.drawColor(Color.BLACK);
             } else {
                 canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), mBackgroundPaint);
             }
+
+            // Draw the background.
+            drawAnalogClock(canvas, mTime, bounds);
+            drawDigitalClock(canvas, mTime, bounds);
+            drawDate(canvas, mTime, bounds);
+
+            if (showTouchCircle) {
+                canvas.drawCircle(touchX, touchY, TOUCH_CIRCLE_RADIUS, mTouchTapPaint);
+            }
+
+
+        }
+
+        private void startTapHighlight(int x, int y) {
+            touchX = x;
+            touchY = y;
+            showTouchCircle = true;
+            invalidate();
+            updateTimer();
+        }
+
+        private void hideTapHighlight() {
+            showTouchCircle = false;
+            invalidate();
+            updateTimer();
+        }
+
+
+        private void drawDate(Canvas canvas, Time mTime, Rect bounds) {
+
+
+        }
+
+        private void drawDigitalClock(Canvas canvas, Time mTime, Rect bounds) {
+
+
+        }
+
+
+        private void drawAnalogClock(Canvas canvas, Time mTime, Rect bounds) {
+
 
             // Find the center. Ignore the window insets so that, on round watches with a
             // "chin", the watch face is centered on the entire screen, not just the usable
@@ -269,18 +378,20 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         }
 
 
-
         @Override
         public void onVisibilityChanged(boolean visible) {
             super.onVisibilityChanged(visible);
 
             if (visible) {
                 registerReceiver();
+                mGoogleApiClient.connect();
 
                 // Update time zone in case it changed while we weren't visible.
                 mTime.clear(TimeZone.getDefault().getID());
                 mTime.setToNow();
             } else {
+                Wearable.DataApi.removeListener(mGoogleApiClient, Engine.this);
+                mGoogleApiClient.disconnect();
                 unregisterReceiver();
             }
 
@@ -305,6 +416,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             mRegisteredTimeZoneReceiver = false;
             SunshineWatchFace.this.unregisterReceiver(mTimeZoneReceiver);
         }
+
 
         /**
          * Starts the {@link #mUpdateTimeHandler} timer if it should be running and isn't currently
@@ -402,6 +514,30 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                     Log.d(TAG, "Found watch face config key: " + configKey);
                 }
 
+                if (Constants.KEY_WEATHER_ICON.equals(configKey)) {
+                    int weatherIconId = config.getInt(configKey);
+                    PreferencesUtil.savePrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_ICON, weatherIconId);
+                }
+
+                if (Constants.KEY_WEATHER_ID.equals(configKey)) {
+                    int weatherId = config.getInt(configKey);
+                    PreferencesUtil.savePrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_ID, weatherId);
+                }
+
+                if (Constants.KEY_WEATHER_TEMP_MAX.equals(configKey)) {
+                    int weatherTempMax = config.getInt(configKey);
+                    PreferencesUtil.savePrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_TEMP_MAX, weatherTempMax);
+                }
+
+                if (Constants.KEY_WEATHER_TEMP_MIN.equals(configKey)) {
+                    int weatherTempMin = config.getInt(configKey);
+                    PreferencesUtil.savePrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_TEMP_MIN, weatherTempMin);
+                }
+
+                if (Constants.KEY_WEATHER_UNIT.equals(configKey)) {
+                    int weatherUnit = config.getInt(configKey);
+                    PreferencesUtil.savePrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_UNIT, weatherUnit);
+                }
             }
         }
 
@@ -423,13 +559,14 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                     , path);
         }
 
-
         private void setDefaultValuesForMissingConfigKeys(DataMap config) {
             addIntKeyIfMissing(config, Constants.KEY_WEATHER_ICON, 0);
             addIntKeyIfMissing(config, Constants.KEY_WEATHER_ID, 0);
-            addIntKeyIfMissing(config, Constants.KEY_WEATHER_TEMP, 0);
-            addIntKeyIfMissing(config, Constants.KEY_COLOR_BG, DEFAULT_BG_COLOR);
+            addIntKeyIfMissing(config, Constants.KEY_WEATHER_TEMP_MIN, 0);
+            addIntKeyIfMissing(config, Constants.KEY_WEATHER_TEMP_MAX, 0);
+            addStringKeyIfMissing(config, Constants.KEY_WEATHER_UNIT, "C");
         }
+
 
         private void addIntKeyIfMissing(DataMap config, String key, int color) {
             if (!config.containsKey(key)) {
@@ -448,8 +585,34 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 config.putString(key, value);
             }
         }
-    }
 
+        public void setColors() {
+            if (!isInAmbientMode()) {
+                ColorPreset colorPreset = getColorPreset();
+                mBackgroundPaint.setColor(colorPreset.getBgColor());
+            } else {
+                mBackgroundPaint.setColor(Color.BLACK);
+            }
+        }
+
+        public void setNextColorPresets() {
+            int colorPresetPosition = PreferencesUtil.getPrefs(SunshineWatchFace.this, Constants.KEY_PRESET_COLOR_POSITION, 0);
+            if (colorPresetPosition >= colorPresets.size() - 1) {
+                colorPresetPosition = 0;
+            } else {
+                colorPresetPosition++;
+            }
+
+            mBackgroundPaint.setColor(colorPresets.get(colorPresetPosition).getBgColor());
+            PreferencesUtil.savePrefs(SunshineWatchFace.this, Constants.KEY_PRESET_COLOR_POSITION, colorPresetPosition);
+        }
+
+        public ColorPreset getColorPreset() {
+            int colorPresetPosition = PreferencesUtil.getPrefs(SunshineWatchFace.this, Constants.KEY_PRESET_COLOR_POSITION, 0);
+            return colorPresets.get(colorPresetPosition);
+        }
+
+    }
 
 
 }
