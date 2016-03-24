@@ -74,17 +74,14 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
      * second hand.
      */
     private static final long INTERACTIVE_UPDATE_RATE_MS = TimeUnit.SECONDS.toMillis(1);
-    private static final long INTERACTIVE_UPDATE_FRAME_MS = 80L;
     private static final int TOUCH_CIRCLE_RADIUS = 40;
-    private static final long TIME_TO_CHECK_PHONE_BATTERY_DATA = TimeUnit.MINUTES.toMillis(5);
+    private static final float BORDER_WIDTH_PX = 3.0f;
 
     /**
      * Handler message id for updating the time periodically in interactive mode.
      */
     private static final int MSG_UPDATE_TIME = 0;
     private static final String TAG = "SunshineWatchFace";
-    private static final int DEFAULT_BG_COLOR = Color.parseColor("#FFFFFF");
-    private static final int DEFAULT_TEXT_COLOR = Color.parseColor("#000000");
 
     @Override
     public Engine onCreateEngine() {
@@ -218,6 +215,8 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
 
+            Log.d(TAG, "onCreate: ");
+
             setWatchFaceStyle(new WatchFaceStyle.Builder(SunshineWatchFace.this)
                     .setCardPeekMode(WatchFaceStyle.PEEK_MODE_SHORT)
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
@@ -228,6 +227,10 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             calendar = Calendar.getInstance();
             initColorPresets();
             initFormats();
+
+            mAmbientPeekCardBorderPaint = new Paint();
+            mAmbientPeekCardBorderPaint.setColor(Color.BLACK);
+            mAmbientPeekCardBorderPaint.setStrokeWidth(BORDER_WIDTH_PX);
 
             mBatteryWatchBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.battery_watch);
 
@@ -257,10 +260,10 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             mAmPmPaint = createTextPaint(colorPreset.getTextColor(), typeface2);
             mAmPmPaint.setTextSize(30);
 
-            mWeatherMaxTempPaint = createTextPaint(colorPreset.getTextColor(), typeface2);
+            mWeatherMaxTempPaint = createTextPaint(colorPreset.getBgColor(), typeface2);
             mWeatherMaxTempPaint.setTextSize(40);
 
-            mWeatherMinTempPaint = createTextPaint(colorPreset.getTextColor(), typeface2);
+            mWeatherMinTempPaint = createTextPaint(colorPreset.getBgColor(), typeface2);
             mWeatherMinTempPaint.setTextSize(25);
 
             mBatteryPaint = createTextPaint(colorPreset.getTextColor());
@@ -288,6 +291,8 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             super.onSurfaceChanged(holder, format, width, height);
 
+            Log.d(TAG, "onSurfaceChanged: ");
+
             initImages();
 
             mWidth = width;
@@ -311,6 +316,13 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
             BitmapUtil.scaleBitmaps(weatherIcons, mScale);
 
+            setTextSizes(mScale);
+
+        }
+
+        private void setTextSizes(float mScale) {
+
+            
         }
 
         private void initImages() {
@@ -322,6 +334,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         }
 
         private void initColorPresets() {
+            colorPresets.put(0, new ColorPreset(Color.parseColor("#03A9F4"), Color.parseColor("#FFFFFF")));
             colorPresets.put(0, new ColorPreset(Color.parseColor("#000000"), Color.parseColor("#FFFFFF")));
             colorPresets.put(1, new ColorPreset(Color.parseColor("#4DD2FF"), Color.parseColor("#FFFFFF")));
             colorPresets.put(2, new ColorPreset(Color.parseColor("#ACBA96"), Color.parseColor("#FFFFFF")));
@@ -374,6 +387,10 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                     mMinutePaint.setAntiAlias(antiAlias);
                     mSecondPaint.setAntiAlias(antiAlias);
                     mAmPmPaint.setAntiAlias(antiAlias);
+                    mBatteryPaint.setAntiAlias(antiAlias);
+                    mBackgroundPaint.setAntiAlias(antiAlias);
+                    mWeatherMaxTempPaint.setAntiAlias(antiAlias);
+                    mWeatherMinTempPaint.setAntiAlias(antiAlias);
                 }
                 setColors();
                 invalidate();
@@ -410,11 +427,25 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         }
 
         @Override
+        public void onPeekCardPositionUpdate(Rect rect) {
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, "onPeekCardPositionUpdate: " + rect);
+            }
+            super.onPeekCardPositionUpdate(rect);
+            if (!rect.equals(mCardBounds)) {
+                mCardBounds.set(rect);
+                invalidate();
+            }
+        }
+
+
+        @Override
         public void onDraw(Canvas canvas, Rect bounds) {
             calendar.setTimeInMillis(System.currentTimeMillis());
 
             if (isInAmbientMode()) {
                 canvas.drawColor(Color.BLACK);
+                canvas.drawRect(mCardBounds, mAmbientPeekCardBorderPaint);
             } else {
                 canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), mBackgroundPaint);
                 canvas.drawRect(0, 200 * mScale, canvas.getWidth(), canvas.getHeight(), mBottomBackgroundPaint);
@@ -422,7 +453,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 drawBatteryWatch(canvas);
             }
 
-            // Draw the background.
             drawDigitalClock(canvas, calendar, bounds);
             drawDate(canvas, calendar, bounds);
 
@@ -431,7 +461,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             }
 
         }
-
 
 
         private void startTapHighlight(int x, int y) {
@@ -720,8 +749,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 mHourPaint.setColor(colorPreset.getTextColor());
                 mMinutePaint.setColor(colorPreset.getTextColor());
                 mSecondPaint.setColor(colorPreset.getTextColor());
-
-
             } else {
                 mBackgroundPaint.setColor(Color.BLACK);
                 mHourPaint.setColor(Color.WHITE);
