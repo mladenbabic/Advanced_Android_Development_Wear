@@ -14,4 +14,6 @@ public  class Constants {
     public static final String KEY_COLOR_TEXT = KEY_ROOT + "color_text";
     public static final String KEY_PRESET_COLOR_POSITION = KEY_ROOT + "preset_position";
     public static final String KEY_WEATHER_UNIT = "weather_unit";
+    public static final String COLON_STRING = ":";
+    public static final String DEFAULT_UNIT = "°C";
 }

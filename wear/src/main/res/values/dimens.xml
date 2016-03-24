@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="analog_hand_stroke">3dp</dimen>
+    <dimen name="hour_x_offset">60dp</dimen>
+    <dimen name="hour_y_offset">120dp</dimen>
+
+    <dimen name="date_x_offset">60dp</dimen>
+    <dimen name="date_y_offset">70dp</dimen>
+
+    <dimen name="hour_format_x_offset">35dp</dimen>
+    <dimen name="hour_format_y_offset">100dp</dimen>
+
+    <dimen name="weather_icon_x_offset">40dp</dimen>
+    <dimen name="weather_icon_y_offset">145dp</dimen>
+
+    <dimen name="weather_temp_x_offset">85dp</dimen>
+    <dimen name="weather_temp_y_offset">175dp</dimen>
+
+    <dimen name="battery_x_offset">150dp</dimen>
+    <dimen name="battery_y_offset">40dp</dimen>
 </resources>

@@ -42,20 +42,25 @@ public class DateUtil {
         return "";
     }
 
-    public int getCurrentHours(Calendar calendar) {
+    public static  int getCurrentHours(Calendar calendar) {
         return calendar.get(Calendar.HOUR);
     }
 
-    public int getCurrent24Hours(Calendar calendar) {
+    public static int getCurrent24Hours(Calendar calendar) {
         return calendar.get(Calendar.HOUR_OF_DAY);
     }
 
-    public int getCurrentMinutes(Calendar calendar) {
-        return calendar.get(Calendar.MINUTE);
+    public static int getCurrentMinutes(Calendar calendar) {
+       return calendar.get(Calendar.MINUTE);
     }
 
-    public int getCurrentSeconds(Calendar calendar) {
+    public static int getCurrentSeconds(Calendar calendar) {
         return calendar.get(Calendar.SECOND);
+    }
+
+
+    public static String formatTwoDigitNumber(int value) {
+        return String.format("%02d", value);
     }
 
 

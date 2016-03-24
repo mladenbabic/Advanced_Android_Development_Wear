@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <array name="weatherImagesIds">
+        <item>@drawable/ic_clear</item>
+        <item>@drawable/ic_cloudy</item>
+        <item>@drawable/ic_fog</item>
+        <item>@drawable/ic_full_cancel</item>
+        <item>@drawable/ic_full_sad</item>
+        <item>@drawable/ic_light_clouds</item>
+        <item>@drawable/ic_light_rain</item>
+        <item>@drawable/ic_rain</item>
+        <item>@drawable/ic_snow</item>
+        <item>@drawable/ic_storm</item>
+        <item>@drawable/ic_status</item>
+    </array>
+
+</resources>
