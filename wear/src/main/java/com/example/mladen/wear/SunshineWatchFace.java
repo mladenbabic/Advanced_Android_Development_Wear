@@ -276,8 +276,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
             mScale = ((float) mWidth) / REF_SIZE;
 
-
-
             mScaledHourXOffset = 60 * mScale;
             mScaledHourYOffset = 160 * mScale;
             mScaledDateYOffset = 90 * mScale;
@@ -455,7 +453,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
         private void initColorPresets() {
             colorPresets.put(0, new ColorPreset(Color.parseColor("#03A9F4"), Color.parseColor("#FFFFFF")));
-            colorPresets.put(0, new ColorPreset(Color.parseColor("#000000"), Color.parseColor("#FFFFFF")));
             colorPresets.put(1, new ColorPreset(Color.parseColor("#4DD2FF"), Color.parseColor("#FFFFFF")));
             colorPresets.put(2, new ColorPreset(Color.parseColor("#ACBA96"), Color.parseColor("#FFFFFF")));
             colorPresets.put(3, new ColorPreset(Color.parseColor("#99F2DB"), Color.parseColor("#000000")));

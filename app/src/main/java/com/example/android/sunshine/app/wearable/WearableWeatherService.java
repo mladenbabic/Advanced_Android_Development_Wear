@@ -22,6 +22,7 @@ import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
 import com.mladenbabic.utils.Constants;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 public class WearableWeatherService extends Service implements
@@ -88,9 +89,17 @@ public class WearableWeatherService extends Service implements
             high  = Utility.getFormattedTemperature(this, high);
             low = Utility.getFormattedTemperature(this, low);
 
+            Log.d(TAG, "sendDataToWear: high temp: " + high);
+            Log.d(TAG, "sendDataToWear: low temp: " + low);
+
+            BigDecimal highBD = new BigDecimal(high);
+            highBD = highBD.setScale(2, BigDecimal.ROUND_UP);
+            BigDecimal lowBD = new BigDecimal(low);
+            lowBD = lowBD.setScale(2, BigDecimal.ROUND_UP);
+
             dataMap.putLong("time", new Date().getTime());
-            dataMap.putInt(Constants.KEY_WEATHER_TEMP_MAX, (int) high);
-            dataMap.putInt(Constants.KEY_WEATHER_TEMP_MIN, (int) low);
+            dataMap.putInt(Constants.KEY_WEATHER_TEMP_MAX, highBD.intValue());
+            dataMap.putInt(Constants.KEY_WEATHER_TEMP_MIN, lowBD.intValue());
             dataMap.putInt(Constants.KEY_WEATHER_ID, weatherId);
             dataMap.putString(Constants.KEY_WEATHER_UNIT, Utility.isMetric(this) ? "C" : "F");
         }

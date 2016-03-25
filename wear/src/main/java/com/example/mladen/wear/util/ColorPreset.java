@@ -1,5 +1,7 @@
 package com.example.mladen.wear.util;
 
+import com.mladenbabic.utils.Constants;
+
 /**
  * Created by mladen on 3/23/16.
  */
