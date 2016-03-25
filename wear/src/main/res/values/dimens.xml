@@ -11,7 +11,7 @@
     <dimen name="weather_icon_x_offset">40dp</dimen>
     <dimen name="weather_icon_y_offset">145dp</dimen>
 
-    <dimen name="weather_temp_x_offset">85dp</dimen>
+    <dimen name="weather_temp_x_offset">80dp</dimen>
     <dimen name="weather_temp_y_offset">175dp</dimen>
 
     <dimen name="battery_x_offset">150dp</dimen>

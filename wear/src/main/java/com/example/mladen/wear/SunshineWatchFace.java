@@ -531,10 +531,9 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             canvas.drawBitmap(mWeatherIconBitmap, mScaledWeatherIconXOffset, mScaledWeatherIconYOffset, null);
             String maxTempString = String.valueOf(mMaxTemp) + Constants.DEGREE + mWeatherUnit;
             String minTempString = String.valueOf(mMinTemp) + Constants.DEGREE + mWeatherUnit;
-            float startXOffset = mScaledWeatherTempXOffset + mWeatherMinTempPaint.measureText(maxTempString);
             canvas.drawText(maxTempString, mScaledWeatherTempXOffset, mScaledWeatherTempYOffset, mWeatherMaxTempPaint);
-            startXOffset += mWeatherMinTempPaint.measureText(minTempString);
-            canvas.drawText(maxTempString, startXOffset, mScaledWeatherTempYOffset, mWeatherMinTempPaint);
+            float startXOffset = mScaledWeatherTempXOffset + mWeatherMinTempPaint.measureText(maxTempString);
+            canvas.drawText(minTempString, startXOffset + 30, mScaledWeatherTempYOffset, mWeatherMinTempPaint);
         }
 
         private void sendToService(String key) {

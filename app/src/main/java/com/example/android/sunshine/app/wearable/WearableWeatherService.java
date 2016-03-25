@@ -85,6 +85,9 @@ public class WearableWeatherService extends Service implements
             double high = cursor.getDouble(INDEX_MAX_TEMP);
             double low = cursor.getDouble(INDEX_MIN_TEMP);
 
+            high  = Utility.getFormattedTemperature(this, high);
+            low = Utility.getFormattedTemperature(this, low);
+
             dataMap.putLong("time", new Date().getTime());
             dataMap.putInt(Constants.KEY_WEATHER_TEMP_MAX, (int) high);
             dataMap.putInt(Constants.KEY_WEATHER_TEMP_MIN, (int) low);
