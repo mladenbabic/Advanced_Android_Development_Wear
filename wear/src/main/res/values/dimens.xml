@@ -16,4 +16,5 @@
 
     <dimen name="battery_x_offset">150dp</dimen>
     <dimen name="battery_y_offset">40dp</dimen>
+
 </resources>

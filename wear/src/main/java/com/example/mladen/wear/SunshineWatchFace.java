@@ -74,6 +74,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
     private static final long INTERACTIVE_UPDATE_RATE_MS = TimeUnit.SECONDS.toMillis(1);
     private static final int TOUCH_CIRCLE_RADIUS = 40;
     private static final float BORDER_WIDTH_PX = 3.0f;
+    private static final int REF_SIZE = 320;
 
     /**
      * Handler message id for updating the time periodically in interactive mode.
@@ -273,7 +274,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             mCenterX = mWidth / 2;
             mCenterY = mHeight / 2;
 
-            mScale = ((float) mWidth) / 320;
+            mScale = ((float) mWidth) / REF_SIZE;
 
             mScaledHourXOffset = resources.getDimension(R.dimen.hour_x_offset) * mScale;
             mScaledHourYOffset = resources.getDimension(R.dimen.hour_y_offset) * mScale;
@@ -285,6 +286,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             mScaledWeatherTempXOffset = resources.getDimension(R.dimen.weather_temp_x_offset) * mScale;
             mScaledWeatherTempYOffset = resources.getDimension(R.dimen.weather_temp_y_offset) * mScale;
             mScaledBatteryYOffset = resources.getDimension(R.dimen.battery_y_offset) * mScale;
+
 
             BitmapUtil.scaleBitmaps(weatherIcons, mScale);
             setTextSizes(mScale);
@@ -382,8 +384,9 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 canvas.drawColor(Color.BLACK);
                 canvas.drawRect(mCardBounds, mAmbientPeekCardBorderPaint);
             } else {
+                int baseBottomLine = mIsRound ? 110: 90;
                 canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), mBackgroundPaint);
-                canvas.drawRect(0, 200 * mScale, canvas.getWidth(), canvas.getHeight(), mBottomBackgroundPaint);
+                canvas.drawRect(0, (bounds.bottom - baseBottomLine * mScale), canvas.getWidth(), canvas.getHeight(), mBottomBackgroundPaint);
                 drawWeather(canvas);
                 drawBatteryWatch(canvas);
             }
@@ -521,7 +524,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         }
 
         private void drawBatteryWatch(Canvas canvas) {
-            canvas.drawBitmap(mBatteryWatchBitmap, mCenterX - 25 * mScale, mScaledBatteryYOffset - 20 * mScale, mBatteryPaint);
+            canvas.drawBitmap(mBatteryWatchBitmap, mCenterX - 26 * mScale, mScaledBatteryYOffset - 23 * mScale, mBatteryPaint);
             canvas.drawText(String.valueOf(mBattery) + "%", mCenterX, mScaledBatteryYOffset, mDatePaint);
         }
 
