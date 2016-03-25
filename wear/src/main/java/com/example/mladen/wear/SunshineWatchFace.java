@@ -276,17 +276,18 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
             mScale = ((float) mWidth) / REF_SIZE;
 
-            mScaledHourXOffset = resources.getDimension(R.dimen.hour_x_offset) * mScale;
-            mScaledHourYOffset = resources.getDimension(R.dimen.hour_y_offset) * mScale;
-            mScaledDateYOffset = resources.getDimension(R.dimen.date_y_offset) * mScale;
-            mScaledHourFormatXOffset = resources.getDimension(R.dimen.hour_format_x_offset) * mScale;
-            mScaledHourFormatYOffset = resources.getDimension(R.dimen.hour_format_y_offset) * mScale;
-            mScaledWeatherIconXOffset = resources.getDimension(R.dimen.weather_icon_x_offset) * mScale;
-            mScaledWeatherIconYOffset = resources.getDimension(R.dimen.weather_icon_y_offset) * mScale;
-            mScaledWeatherTempXOffset = resources.getDimension(R.dimen.weather_temp_x_offset) * mScale;
-            mScaledWeatherTempYOffset = resources.getDimension(R.dimen.weather_temp_y_offset) * mScale;
-            mScaledBatteryYOffset = resources.getDimension(R.dimen.battery_y_offset) * mScale;
 
+
+            mScaledHourXOffset = 60 * mScale;
+            mScaledHourYOffset = 160 * mScale;
+            mScaledDateYOffset = 90 * mScale;
+            mScaledHourFormatXOffset = 30 * mScale;
+            mScaledHourFormatYOffset = 130 * mScale;
+            mScaledWeatherIconXOffset = 60 * mScale;
+            mScaledWeatherIconYOffset = 220 * mScale;
+            mScaledWeatherTempXOffset = 125 * mScale;
+            mScaledWeatherTempYOffset = 265 * mScale;
+            mScaledBatteryYOffset = 42 * mScale;
 
             BitmapUtil.scaleBitmaps(weatherIcons, mScale);
             setTextSizes(mScale);
@@ -384,9 +385,8 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 canvas.drawColor(Color.BLACK);
                 canvas.drawRect(mCardBounds, mAmbientPeekCardBorderPaint);
             } else {
-                int baseBottomLine = mIsRound ? 110: 90;
                 canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), mBackgroundPaint);
-                canvas.drawRect(0, (bounds.bottom - baseBottomLine * mScale), canvas.getWidth(), canvas.getHeight(), mBottomBackgroundPaint);
+                canvas.drawRect(0, (bounds.bottom - 120 * mScale), canvas.getWidth(), canvas.getHeight(), mBottomBackgroundPaint);
                 drawWeather(canvas);
                 drawBatteryWatch(canvas);
             }
@@ -441,7 +441,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
         private void setTextSizes(float mScale) {
             mDatePaint.setTextSize(23 * mScale);
-            mHourPaint.setTextSize(65* mScale);
+            mHourPaint.setTextSize(65 * mScale);
             mMinutePaint.setTextSize(65 * mScale);
             mSecondPaint.setTextSize(40 * mScale);
             mAmPmPaint.setTextSize(20 * mScale);
@@ -451,8 +451,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
         private void initImages() {
             weatherIcons = BitmapUtil.loadBitmaps(R.array.weatherImagesIds, resources);
-
-
         }
 
         private void initColorPresets() {
@@ -785,7 +783,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         }
 
 
-        public  int getIconResourceForWeatherCondition(int weatherId) {
+        public int getIconResourceForWeatherCondition(int weatherId) {
             // Based on weather code data found at:
             // http://bugs.openweathermap.org/projects/api/wiki/Weather_Condition_Codes
             if (weatherId >= 200 && weatherId <= 232) {
@@ -815,10 +813,10 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         }
 
         private void setInitWeatherData() {
-           mWeatherId = PreferencesUtil.getPrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_ID, 0);
-           mMaxTemp = PreferencesUtil.getPrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_TEMP_MAX, 0);
-           mMinTemp = PreferencesUtil.getPrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_TEMP_MIN, 0);
-           mWeatherUnit = PreferencesUtil.getPrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_UNIT, "C");
+            mWeatherId = PreferencesUtil.getPrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_ID, 0);
+            mMaxTemp = PreferencesUtil.getPrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_TEMP_MAX, 0);
+            mMinTemp = PreferencesUtil.getPrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_TEMP_MIN, 0);
+            mWeatherUnit = PreferencesUtil.getPrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_UNIT, "C");
         }
 
     }
