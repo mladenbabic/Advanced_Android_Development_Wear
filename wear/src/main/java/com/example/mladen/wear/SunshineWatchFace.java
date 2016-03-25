@@ -41,6 +41,7 @@ import android.util.SparseArray;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
+import com.example.mladen.wear.service.ConfigDataListenerService;
 import com.example.mladen.wear.util.BitmapUtil;
 import com.example.mladen.wear.util.ColorPreset;
 import com.example.mladen.wear.util.DateUtil;
@@ -60,19 +61,16 @@ import com.mladenbabic.utils.Constants;
 import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Analog watch face with a ticking second hand. In ambient mode, the second hand isn't shown. On
- * devices with low-bit ambient mode, the hands are drawn without anti-aliasing in ambient mode.
- */
+
 public class SunshineWatchFace extends CanvasWatchFaceService {
-    /**
-     * Update rate in milliseconds for interactive mode. We update once a second to advance the
-     * second hand.
-     */
+
+
     private static final long INTERACTIVE_UPDATE_RATE_MS = TimeUnit.SECONDS.toMillis(1);
     private static final int TOUCH_CIRCLE_RADIUS = 40;
     private static final float BORDER_WIDTH_PX = 3.0f;
@@ -166,6 +164,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         private int mMinTemp = 0;
         private int mMaxTemp = 0;
         private int mWeatherIconId = 0;
+        private int mWeatherId = 0;
         private String mWeatherUnit = Constants.DEFAULT_UNIT;
         int mBattery;
 
@@ -174,9 +173,9 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         String dateValue;
 
 
-        Typeface typeface2 = Typeface.createFromAsset(getAssets(), "fonts/digital2.ttf");
+        Typeface typeface2 = Typeface.createFromAsset(getAssets(), "fonts/Roboto-Thin.ttf");
 
-        SparseArray<Bitmap> weatherIcons = new SparseArray();
+        Map<Integer, Bitmap> weatherIcons = new HashMap<>();
         SparseArray<ColorPreset> colorPresets = new SparseArray();
 
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
@@ -204,14 +203,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
 
         @Override
-        public void onApplyWindowInsets(WindowInsets insets) {
-            super.onApplyWindowInsets(insets);
-            mIsRound = insets.isRound();
-            mChinSize = insets.getSystemWindowInsetBottom();
-        }
-
-
-        @Override
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
 
@@ -225,8 +216,10 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                     .build());
 
             calendar = Calendar.getInstance();
+
             initColorPresets();
             initFormats();
+            initImages();
 
             mAmbientPeekCardBorderPaint = new Paint();
             mAmbientPeekCardBorderPaint.setColor(Color.BLACK);
@@ -246,54 +239,33 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             mBottomBackgroundPaint.setColor(Color.WHITE);
 
             mDatePaint = createTextPaint(colorPreset.getTextColor(), typeface2);
-            mDatePaint.setTextSize(20);
-
             mHourPaint = createTextPaint(colorPreset.getTextColor(), typeface2);
-            mHourPaint.setTextSize(80);
-
             mMinutePaint = createTextPaint(colorPreset.getTextColor(), typeface2);
-            mMinutePaint.setTextSize(80);
-
             mSecondPaint = createTextPaint(colorPreset.getTextColor(), typeface2);
-            mSecondPaint.setTextSize(50);
-
             mAmPmPaint = createTextPaint(colorPreset.getTextColor(), typeface2);
-            mAmPmPaint.setTextSize(30);
-
             mWeatherMaxTempPaint = createTextPaint(colorPreset.getBgColor(), typeface2);
-            mWeatherMaxTempPaint.setTextSize(40);
-
             mWeatherMinTempPaint = createTextPaint(colorPreset.getBgColor(), typeface2);
-            mWeatherMinTempPaint.setTextSize(25);
-
             mBatteryPaint = createTextPaint(colorPreset.getTextColor());
             setColorToBitmap(mBatteryPaint, colorPreset.getTextColor());
 
+            setInitWeatherData();
+
         }
 
-        private Paint createTextPaint(int color, Typeface typeface) {
-            Paint paint = new Paint();
-            paint.setColor(color);
-            paint.setTypeface(typeface);
-            paint.setAntiAlias(true);
-            return paint;
-        }
 
-        private Paint createTextPaint(int color) {
-            Paint paint = new Paint();
-            paint.setColor(color);
-            paint.setAntiAlias(true);
-            return paint;
+        @Override
+        public void onApplyWindowInsets(WindowInsets insets) {
+            super.onApplyWindowInsets(insets);
+            mIsRound = insets.isRound();
+            mChinSize = insets.getSystemWindowInsetBottom();
+            sendToService(Constants.KEY_START_WATCH_FACE);
         }
 
 
         @Override
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             super.onSurfaceChanged(holder, format, width, height);
-
             Log.d(TAG, "onSurfaceChanged: ");
-
-            initImages();
 
             mWidth = width;
             mHeight = height;
@@ -315,51 +287,14 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             mScaledBatteryYOffset = resources.getDimension(R.dimen.battery_y_offset) * mScale;
 
             BitmapUtil.scaleBitmaps(weatherIcons, mScale);
-
             setTextSizes(mScale);
 
         }
 
-        private void setTextSizes(float mScale) {
-
-            
-        }
-
-        private void initImages() {
-
-            Bitmap[] weatherIconBitmaps = BitmapUtil.loadBitmaps(R.array.weatherImagesIds, resources);
-            for (int i = 0; i < weatherIconBitmaps.length; i++) {
-                weatherIcons.put(i, weatherIconBitmaps[i]);
-            }
-        }
-
-        private void initColorPresets() {
-            colorPresets.put(0, new ColorPreset(Color.parseColor("#03A9F4"), Color.parseColor("#FFFFFF")));
-            colorPresets.put(0, new ColorPreset(Color.parseColor("#000000"), Color.parseColor("#FFFFFF")));
-            colorPresets.put(1, new ColorPreset(Color.parseColor("#4DD2FF"), Color.parseColor("#FFFFFF")));
-            colorPresets.put(2, new ColorPreset(Color.parseColor("#ACBA96"), Color.parseColor("#FFFFFF")));
-            colorPresets.put(3, new ColorPreset(Color.parseColor("#99F2DB"), Color.parseColor("#000000")));
-            colorPresets.put(4, new ColorPreset(Color.parseColor("#DB8180"), Color.parseColor("#FFFFFF")));
-            colorPresets.put(5, new ColorPreset(Color.parseColor("#3F51B5"), Color.parseColor("#FFFFFF")));
-            colorPresets.put(6, new ColorPreset(Color.parseColor("#5D4037"), Color.parseColor("#FFFFFF")));
-            colorPresets.put(7, new ColorPreset(Color.parseColor("#607D8B"), Color.parseColor("#FFFFFF")));
-            colorPresets.put(7, new ColorPreset(Color.parseColor("#607D8B"), Color.parseColor("#FFFFFF")));
-            colorPresets.put(7, new ColorPreset(Color.parseColor("#FFC107"), Color.parseColor("#212121")));
-        }
-
-        private void initFormats() {
-            mDayOfWeekFormat = new SimpleDateFormat("EEEE", Locale.getDefault());
-            mDayOfWeekFormat.setCalendar(calendar);
-            mDateFormat = DateFormat.getDateFormat(SunshineWatchFace.this);
-            mDateFormat.setCalendar(calendar);
-        }
-
-
         @Override
         public void onDestroy() {
-            mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
             super.onDestroy();
-            BitmapUtil.recycleBitmaps(weatherIcons);
+            mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
         }
 
         @Override
@@ -454,7 +389,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             }
 
             drawDigitalClock(canvas, calendar, bounds);
-            drawDate(canvas, calendar, bounds);
+            drawDate(canvas, calendar);
 
             if (showTouchCircle) {
                 canvas.drawCircle(touchX, touchY, TOUCH_CIRCLE_RADIUS, mTouchTapPaint);
@@ -462,6 +397,81 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
         }
 
+        @Override
+        public void onVisibilityChanged(boolean visible) {
+            super.onVisibilityChanged(visible);
+
+            if (visible) {
+                registerReceiver();
+                mGoogleApiClient.connect();
+                // Update time zone in case it changed while we weren't visible.
+                calendar.setTimeZone(TimeZone.getDefault());
+                calendar.setTimeInMillis(System.currentTimeMillis());
+            } else {
+                Wearable.DataApi.removeListener(mGoogleApiClient, Engine.this);
+                mGoogleApiClient.disconnect();
+                unregisterReceiver();
+            }
+
+            showTouchCircle = false;
+            // Whether the timer should be running depends on whether we're visible (as well as
+            // whether we're in ambient mode), so we may need to start or stop the timer.
+            updateTimer();
+        }
+
+
+        private Paint createTextPaint(int color, Typeface typeface) {
+            Paint paint = new Paint();
+            paint.setColor(color);
+            paint.setTypeface(typeface);
+            paint.setAntiAlias(true);
+            return paint;
+        }
+
+        private Paint createTextPaint(int color) {
+            Paint paint = new Paint();
+            paint.setColor(color);
+            paint.setAntiAlias(true);
+            return paint;
+        }
+
+
+        private void setTextSizes(float mScale) {
+            mDatePaint.setTextSize(23 * mScale);
+            mHourPaint.setTextSize(65* mScale);
+            mMinutePaint.setTextSize(65 * mScale);
+            mSecondPaint.setTextSize(40 * mScale);
+            mAmPmPaint.setTextSize(20 * mScale);
+            mWeatherMaxTempPaint.setTextSize(40 * mScale);
+            mWeatherMinTempPaint.setTextSize(25 * mScale);
+        }
+
+        private void initImages() {
+            weatherIcons = BitmapUtil.loadBitmaps(R.array.weatherImagesIds, resources);
+
+
+        }
+
+        private void initColorPresets() {
+            colorPresets.put(0, new ColorPreset(Color.parseColor("#03A9F4"), Color.parseColor("#FFFFFF")));
+            colorPresets.put(0, new ColorPreset(Color.parseColor("#000000"), Color.parseColor("#FFFFFF")));
+            colorPresets.put(1, new ColorPreset(Color.parseColor("#4DD2FF"), Color.parseColor("#FFFFFF")));
+            colorPresets.put(2, new ColorPreset(Color.parseColor("#ACBA96"), Color.parseColor("#FFFFFF")));
+            colorPresets.put(3, new ColorPreset(Color.parseColor("#99F2DB"), Color.parseColor("#000000")));
+            colorPresets.put(4, new ColorPreset(Color.parseColor("#DB8180"), Color.parseColor("#FFFFFF")));
+            colorPresets.put(5, new ColorPreset(Color.parseColor("#3F51B5"), Color.parseColor("#FFFFFF")));
+            colorPresets.put(6, new ColorPreset(Color.parseColor("#5D4037"), Color.parseColor("#FFFFFF")));
+            colorPresets.put(7, new ColorPreset(Color.parseColor("#607D8B"), Color.parseColor("#FFFFFF")));
+            colorPresets.put(7, new ColorPreset(Color.parseColor("#607D8B"), Color.parseColor("#FFFFFF")));
+            colorPresets.put(7, new ColorPreset(Color.parseColor("#FFC107"), Color.parseColor("#212121")));
+        }
+
+        private void initFormats() {
+            mDayOfWeekFormat = new SimpleDateFormat("EEEE", Locale.getDefault());
+            mDayOfWeekFormat.setCalendar(calendar);
+            mDateFormat = DateFormat.getDateFormat(SunshineWatchFace.this);
+            mDateFormat.setCalendar(calendar);
+        }
 
         private void startTapHighlight(int x, int y) {
             touchX = x;
@@ -477,7 +487,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             updateTimer();
         }
 
-        private void drawDate(Canvas canvas, Calendar calendar, Rect bounds) {
+        private void drawDate(Canvas canvas, Calendar calendar) {
             String dayOfWeekString = mDayOfWeekFormat.format(calendar.getTime());
             String dateString = mDateFormat.format(calendar.getTime());
             dateValue = dayOfWeekString + ", " + dateString;
@@ -516,40 +526,23 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         }
 
         private void drawWeather(Canvas canvas) {
+            mWeatherIconId = getIconResourceForWeatherCondition(mWeatherId);
             mWeatherIconBitmap = weatherIcons.get(mWeatherIconId);
             canvas.drawBitmap(mWeatherIconBitmap, mScaledWeatherIconXOffset, mScaledWeatherIconYOffset, null);
-
-            String maxTempString = String.valueOf(mMaxTemp) + mWeatherUnit;
-            String minTempString = String.valueOf(mMinTemp) + mWeatherUnit;
+            String maxTempString = String.valueOf(mMaxTemp) + Constants.DEGREE + mWeatherUnit;
+            String minTempString = String.valueOf(mMinTemp) + Constants.DEGREE + mWeatherUnit;
             float startXOffset = mScaledWeatherTempXOffset + mWeatherMinTempPaint.measureText(maxTempString);
             canvas.drawText(maxTempString, mScaledWeatherTempXOffset, mScaledWeatherTempYOffset, mWeatherMaxTempPaint);
             startXOffset += mWeatherMinTempPaint.measureText(minTempString);
             canvas.drawText(maxTempString, startXOffset, mScaledWeatherTempYOffset, mWeatherMinTempPaint);
-
         }
 
-
-        @Override
-        public void onVisibilityChanged(boolean visible) {
-            super.onVisibilityChanged(visible);
-
-            if (visible) {
-                registerReceiver();
-                mGoogleApiClient.connect();
-                // Update time zone in case it changed while we weren't visible.
-                calendar.setTimeZone(TimeZone.getDefault());
-                calendar.setTimeInMillis(System.currentTimeMillis());
-            } else {
-                Wearable.DataApi.removeListener(mGoogleApiClient, Engine.this);
-                mGoogleApiClient.disconnect();
-                unregisterReceiver();
-            }
-
-            showTouchCircle = false;
-            // Whether the timer should be running depends on whether we're visible (as well as
-            // whether we're in ambient mode), so we may need to start or stop the timer.
-            updateTimer();
+        private void sendToService(String key) {
+            Intent destroyService = new Intent(SunshineWatchFace.this, ConfigDataListenerService.class);
+            destroyService.putExtra(key, true);
+            startService(destroyService);
         }
+
 
         private void registerReceiver() {
             if (mRegisteredTimeZoneReceiver) {
@@ -612,7 +605,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 Log.d(TAG, "onConnected: " + connectionHint);
             }
             Wearable.DataApi.addListener(mGoogleApiClient, Engine.this);
-            updateConfigDataItemAndUiOnStartup(Constants.PATH_CONFIG_DATA);
+            updateConfigDataItemAndUiOnStartup(Constants.PATH_WEATHER_DATA);
         }
 
         @Override  // GoogleApiClient.ConnectionCallbacks
@@ -634,7 +627,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                     DataItem dataItem = dataEvent.getDataItem();
                     Log.d(TAG, "onDataChanged: Path" + dataItem.getUri().getPath());
                     if (!dataItem.getUri().getPath().equals(
-                            Constants.PATH_CONFIG_DATA)) {
+                            Constants.PATH_WEATHER_DATA)) {
                         continue;
                     }
 
@@ -670,11 +663,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                     Log.d(TAG, "Found watch face config key: " + configKey);
                 }
 
-                if (Constants.KEY_WEATHER_ICON.equals(configKey)) {
-                    int weatherIconId = config.getInt(configKey);
-                    PreferencesUtil.savePrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_ICON, weatherIconId);
-                }
-
                 if (Constants.KEY_WEATHER_ID.equals(configKey)) {
                     int weatherId = config.getInt(configKey);
                     PreferencesUtil.savePrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_ID, weatherId);
@@ -682,16 +670,19 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
                 if (Constants.KEY_WEATHER_TEMP_MAX.equals(configKey)) {
                     int weatherTempMax = config.getInt(configKey);
+                    mMaxTemp = weatherTempMax;
                     PreferencesUtil.savePrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_TEMP_MAX, weatherTempMax);
                 }
 
                 if (Constants.KEY_WEATHER_TEMP_MIN.equals(configKey)) {
                     int weatherTempMin = config.getInt(configKey);
+                    mMinTemp = weatherTempMin;
                     PreferencesUtil.savePrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_TEMP_MIN, weatherTempMin);
                 }
 
                 if (Constants.KEY_WEATHER_UNIT.equals(configKey)) {
                     String weatherUnit = config.getString(configKey);
+                    mWeatherUnit = weatherUnit;
                     PreferencesUtil.savePrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_UNIT, weatherUnit);
                 }
             }
@@ -789,6 +780,43 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             int mul = 0x00000000; //remove BLACK component
             LightingColorFilter lightingColorFilter = new LightingColorFilter(mul, color);
             colorPaint.setColorFilter(lightingColorFilter);
+        }
+
+
+        public  int getIconResourceForWeatherCondition(int weatherId) {
+            // Based on weather code data found at:
+            // http://bugs.openweathermap.org/projects/api/wiki/Weather_Condition_Codes
+            if (weatherId >= 200 && weatherId <= 232) {
+                return R.drawable.ic_storm;
+            } else if (weatherId >= 300 && weatherId <= 321) {
+                return R.drawable.ic_light_rain;
+            } else if (weatherId >= 500 && weatherId <= 504) {
+                return R.drawable.ic_rain;
+            } else if (weatherId == 511) {
+                return R.drawable.ic_snow;
+            } else if (weatherId >= 520 && weatherId <= 531) {
+                return R.drawable.ic_rain;
+            } else if (weatherId >= 600 && weatherId <= 622) {
+                return R.drawable.ic_snow;
+            } else if (weatherId >= 701 && weatherId <= 761) {
+                return R.drawable.ic_fog;
+            } else if (weatherId == 761 || weatherId == 781) {
+                return R.drawable.ic_storm;
+            } else if (weatherId == 800) {
+                return R.drawable.ic_clear;
+            } else if (weatherId == 801) {
+                return R.drawable.ic_light_clouds;
+            } else if (weatherId >= 802 && weatherId <= 804) {
+                return R.drawable.ic_cloudy;
+            }
+            return R.drawable.ic_clear;
+        }
+
+        private void setInitWeatherData() {
+           mWeatherId = PreferencesUtil.getPrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_ID, 0);
+           mMaxTemp = PreferencesUtil.getPrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_TEMP_MAX, 0);
+           mMinTemp = PreferencesUtil.getPrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_TEMP_MIN, 0);
+           mWeatherUnit = PreferencesUtil.getPrefs(SunshineWatchFace.this, Constants.KEY_WEATHER_UNIT, "C");
         }
 
     }

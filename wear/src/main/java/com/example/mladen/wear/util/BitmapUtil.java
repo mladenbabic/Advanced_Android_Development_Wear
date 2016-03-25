@@ -7,9 +7,11 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.util.SparseArray;
 import android.util.TypedValue;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -18,17 +20,15 @@ import java.util.Map;
 public class BitmapUtil {
 
 
-    public static Bitmap getResizedBitmap(Bitmap bitmap, int i, int j)
-    {
+    public static Bitmap getResizedBitmap(Bitmap bitmap, int i, int j) {
         int k = bitmap.getWidth();
         int l = bitmap.getHeight();
-        float f = (float)i / (float)k;
-        float f1 = (float)j / (float)l;
+        float f = (float) i / (float) k;
+        float f1 = (float) j / (float) l;
         Matrix matrix = new Matrix();
         matrix.postScale(f, f1);
         return Bitmap.createBitmap(bitmap, 0, 0, k, l, matrix, false);
     }
-
 
 
     public static Bitmap getBitmap(
@@ -49,15 +49,21 @@ public class BitmapUtil {
     }
 
 
-    public static void scaleBitmaps(Map<Integer,Bitmap> bitmapMap, float scale) {
-        for (int i = 0; i < bitmapMap.size(); i++) {
-            bitmapMap.put(i,scaleBitmap(bitmapMap.get(i), scale));
+    public static void scaleBitmaps(Map<Integer, Bitmap> bitmapMap, float scale) {
+        for (Integer key: bitmapMap.keySet()) {
+            Bitmap bitmap = bitmapMap.get(key);
+            bitmapMap.put(key, scaleBitmap(bitmap, scale));
         }
     }
 
+
+
     public static void scaleBitmaps(SparseArray<Bitmap> bitmapMap, float scale) {
         for (int i = 0; i < bitmapMap.size(); i++) {
-            bitmapMap.put(i,scaleBitmap( bitmapMap.get(i), scale));
+            int key = bitmapMap.keyAt(i);
+            Log.d("BitmapUtil", "scaleBitmaps: " + key);
+            Bitmap bitmap = bitmapMap.get(key);
+            bitmapMap.put(i, scaleBitmap(bitmap, scale));
         }
     }
 
@@ -86,14 +92,15 @@ public class BitmapUtil {
     }
 
 
-    public static Bitmap[] loadBitmaps(int arrayId, Resources resources) {
+    public static Map<Integer, Bitmap> loadBitmaps(int arrayId, Resources resources) {
+        Map<Integer, Bitmap> bitmapsMaps = new HashMap<>();
         int[] bitmapIds = getIntArray(arrayId, resources);
-        Bitmap[] bitmaps = new Bitmap[bitmapIds.length];
         for (int i = 0; i < bitmapIds.length; i++) {
             Drawable backgroundDrawable = resources.getDrawable(bitmapIds[i]);
-            bitmaps[i] = ((BitmapDrawable) backgroundDrawable).getBitmap();
+            Bitmap bitmap = ((BitmapDrawable) backgroundDrawable).getBitmap();
+            bitmapsMaps.put(bitmapIds[i], bitmap);
         }
-        return bitmaps;
+        return bitmapsMaps;
     }
 
     public static void recycleBitmaps(SparseArray<Bitmap> bitmapSparseArray) {

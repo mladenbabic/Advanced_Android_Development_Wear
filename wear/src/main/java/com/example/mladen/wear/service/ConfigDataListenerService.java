@@ -6,10 +6,10 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.example.mladen.wear.SunshineWatchFace;
 import com.example.mladen.wear.util.DigitalWatchFaceUtil;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataItem;
@@ -19,13 +19,10 @@ import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
-import com.google.android.gms.wearable.PutDataMapRequest;
-import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 import com.mladenbabic.utils.Constants;
 
-import java.util.Date;
 
 
 public class ConfigDataListenerService extends WearableListenerService implements
@@ -48,14 +45,26 @@ public class ConfigDataListenerService extends WearableListenerService implement
     @Override
     public void onPeerConnected(Node peer) {
         Log.d(TAG, " onPeerConnected ");
+        if (isServiceRunning(this, SunshineWatchFace.class)) {
+            Log.d(TAG, " sending start watch face ");
+            sendMessageToDevice(Constants.PATH_START_WATCH_FACE);
+        }
     }
 
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+
+        boolean startWatchFace = checkAction(intent, Constants.KEY_START_WATCH_FACE);
+        if (startWatchFace) {
+            sendMessageToDevice(Constants.PATH_START_WATCH_FACE);
+        }
         return super.onStartCommand(intent, flags, startId);
     }
 
+    private static boolean checkAction(Intent intent, String booleanKey) {
+        return intent != null && intent.getBooleanExtra(booleanKey, false);
+    }
 
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
@@ -88,30 +97,54 @@ public class ConfigDataListenerService extends WearableListenerService implement
 
     @Override
     public void onDataChanged(DataEventBuffer dataEvents) {
-//        try {
-//            for (DataEvent dataEvent : dataEvents) {
-//                if (dataEvent.getType() != DataEvent.TYPE_CHANGED) {
-//                    continue;
-//                }
-//
-//                DataItem dataItem = dataEvent.getDataItem();
-//
-//                Log.d(TAG, "path: " + dataItem.getUri().getPath());
-//
-//                if (!dataItem.getUri().getPath().equals(Constants.PATH_BATTERY_DATA)) {
-//                    continue;
-//                }
-//
-//                DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItem);
-//                DataMap config = dataMapItem.getDataMap();
-//                if (Log.isLoggable(TAG, Log.DEBUG)) {
-//                    Log.d(TAG, "Config DataItem updated:" + config);
-//                }
-//                DigitalWatchFaceUtil.overwriteKeysInConfigDataMap(mGoogleApiClient, config, Constants.PATH_CONFIG_DATA);
-//            }
-//        } finally {
-//            dataEvents.close();
-//        }
+        Log.d(TAG, "onDataChanged: ");
+        try {
+            
+            for (DataEvent dataEvent : dataEvents) {
+                if (dataEvent.getType() != DataEvent.TYPE_CHANGED) {
+                    continue;
+                }
+
+                DataItem dataItem = dataEvent.getDataItem();
+
+                Log.d(TAG, "path: " + dataItem.getUri().getPath());
+
+                if (!dataItem.getUri().getPath().equals(Constants.PATH_WEATHER_DATA)) {
+                    continue;
+                }
+
+                DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItem);
+                DataMap config = dataMapItem.getDataMap();
+                if (Log.isLoggable(TAG, Log.DEBUG)) {
+                    Log.d(TAG, "Config DataItem updated:" + config);
+                }
+                DigitalWatchFaceUtil.overwriteKeysInConfigDataMap(mGoogleApiClient, config, Constants.PATH_WEATHER_DATA);
+            }
+        } finally {
+            dataEvents.close();
+        }
+    }
+
+    private void sendMessageToDevice(final String key) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (mGoogleApiClient == null) {
+                    mGoogleApiClient = (new com.google.android.gms.common.api.GoogleApiClient.Builder(ConfigDataListenerService.this)).addConnectionCallbacks(ConfigDataListenerService.this).addOnConnectionFailedListener(ConfigDataListenerService.this).addApi(Wearable.API).build();
+                }
+                NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(mGoogleApiClient).await();
+                if (nodes != null && nodes.getNodes() != null) {
+                    for (Node node : nodes.getNodes()) {
+                        MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(mGoogleApiClient, node.getId(), key, null).await();
+                        if (!result.getStatus().isSuccess()) {
+                            Log.e(TAG, "Error during sending message");
+                        } else {
+                            Log.i(TAG, "Success!! sent to: " + node.getDisplayName());
+                        }
+                    }
+                }
+            }
+        }).start();
     }
 
 

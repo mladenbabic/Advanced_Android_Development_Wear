@@ -3,10 +3,9 @@
     <dimen name="hour_x_offset">60dp</dimen>
     <dimen name="hour_y_offset">120dp</dimen>
 
-    <dimen name="date_x_offset">60dp</dimen>
     <dimen name="date_y_offset">70dp</dimen>
 
-    <dimen name="hour_format_x_offset">35dp</dimen>
+    <dimen name="hour_format_x_offset">30dp</dimen>
     <dimen name="hour_format_y_offset">100dp</dimen>
 
     <dimen name="weather_icon_x_offset">40dp</dimen>

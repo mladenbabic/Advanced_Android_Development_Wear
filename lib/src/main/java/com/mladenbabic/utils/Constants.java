@@ -15,5 +15,9 @@ public  class Constants {
     public static final String KEY_PRESET_COLOR_POSITION = KEY_ROOT + "preset_position";
     public static final String KEY_WEATHER_UNIT = "weather_unit";
     public static final String COLON_STRING = ":";
-    public static final String DEFAULT_UNIT = "°C";
+    public static final String DEGREE = "°";
+    public static final String DEFAULT_UNIT = DEGREE + "C";
+    public static final String KEY_START_WATCH_FACE = KEY_PATH + "start_watchface";
+    public static final String PATH_START_WATCH_FACE = KEY_ROOT + "start_watchface";
+    public static final String PATH_WEATHER_DATA = KEY_PATH + "weather_data";
 }
